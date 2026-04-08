@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation } from '@tanstack/react-query';
@@ -22,15 +21,17 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const signIn = useAuthStore((s) => s.signIn);
 
   const mutation = useMutation({
     mutationFn: () => login(email.trim(), password),
     onSuccess: async ({ token, user }) => {
+      setError('');
       await signIn(token, user);
     },
     onError: (err: Error) => {
-      Alert.alert('Login failed', err.message);
+      setError(err.message);
     },
   });
 
@@ -68,6 +69,8 @@ export default function LoginScreen({ navigation }: Props) {
             onChangeText={setPassword}
             onSubmitEditing={() => mutation.mutate()}
           />
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <TouchableOpacity
             style={[styles.btn, mutation.isPending && styles.btnDisabled]}
@@ -154,5 +157,14 @@ const styles = StyleSheet.create({
   linkAccent: {
     color: colors.primary,
     fontWeight: typography.semibold,
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: typography.sm,
+    textAlign: 'center',
+    backgroundColor: colors.dangerDim,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
 });
