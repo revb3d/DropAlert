@@ -17,6 +17,8 @@ import { triggerPoll, changePassword, deleteAccount, updateSettings } from '../a
 import { useAuthStore } from '../store/authStore';
 import { toast } from '../store/toastStore';
 import { colors, spacing, radius, typography, shadow } from '../theme';
+import ScreenBackground from '../components/ScreenBackground';
+import GradientButton from '../components/GradientButton';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -108,6 +110,7 @@ export default function SettingsScreen() {
   };
 
   return (
+    <ScreenBackground>
     <ScrollView
       style={styles.root}
       contentContainerStyle={[
@@ -175,16 +178,11 @@ export default function SettingsScreen() {
               value={confirmPw}
               onChangeText={setConfirmPw}
             />
-            <TouchableOpacity
-              style={styles.saveBtn}
+            <GradientButton
+              label="Update Password"
               onPress={handleChangePw}
-              disabled={changePwMutation.isPending}
-            >
-              {changePwMutation.isPending
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.saveBtnText}>Update Password</Text>
-              }
-            </TouchableOpacity>
+              loading={changePwMutation.isPending}
+            />
           </View>
         )}
       </View>
@@ -232,16 +230,11 @@ export default function SettingsScreen() {
           />
         )}
 
-        <TouchableOpacity
-          style={styles.saveBtn}
+        <GradientButton
+          label="Save Preferences"
           onPress={handleSaveSettings}
-          disabled={settingsMutation.isPending}
-        >
-          {settingsMutation.isPending
-            ? <ActivityIndicator color="#fff" size="small" />
-            : <Text style={styles.saveBtnText}>Save Preferences</Text>
-          }
-        </TouchableOpacity>
+          loading={settingsMutation.isPending}
+        />
       </View>
 
       {/* Notifications card */}
@@ -288,6 +281,7 @@ export default function SettingsScreen() {
 
       <Text style={styles.version}>DropAlert v1.0.0</Text>
     </ScrollView>
+    </ScreenBackground>
   );
 }
 
@@ -306,7 +300,7 @@ function Row({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: spacing.lg, gap: spacing.lg },
   heading: { fontSize: typography.xl, fontWeight: typography.bold, color: colors.text },
   card: {

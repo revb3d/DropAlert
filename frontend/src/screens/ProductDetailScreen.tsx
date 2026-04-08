@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Switch,
   TextInput,
-  Alert,
   ActivityIndicator,
   Linking,
   Dimensions,
@@ -19,6 +18,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Svg, { Path, Polyline, Line, Text as SvgText } from 'react-native-svg';
 import { getTrackedProducts, getPriceHistory, updateProductSettings } from '../api/products';
 import { colors, spacing, radius, typography, shadow } from '../theme';
+import ScreenBackground from '../components/ScreenBackground';
+import GradientButton from '../components/GradientButton';
+import { toast } from '../store/toastStore';
 import { formatPrice, timeAgo } from '../utils/format';
 import { DashboardStackParamList } from '../navigation';
 
@@ -61,9 +63,9 @@ export default function ProductDetailScreen({ route }: Props) {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      Alert.alert('Saved', 'Alert settings updated.');
+      toast('Alert settings updated.', 'success');
     },
-    onError: (err: Error) => Alert.alert('Error', err.message),
+    onError: (err: Error) => toast(err.message, 'error'),
   });
 
   if (!product) {
@@ -80,6 +82,7 @@ export default function ProductDetailScreen({ route }: Props) {
   const lowPrice = prices.length ? Math.min(...prices) : null;
 
   return (
+    <ScreenBackground>
     <ScrollView
       style={styles.root}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
@@ -166,19 +169,14 @@ export default function ProductDetailScreen({ route }: Props) {
           />
         </View>
 
-        <TouchableOpacity
-          style={[styles.saveBtn, mutation.isPending && styles.saveBtnDisabled]}
+        <GradientButton
+          label="Save changes"
           onPress={() => mutation.mutate()}
-          disabled={mutation.isPending}
-        >
-          {mutation.isPending ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.saveBtnText}>Save changes</Text>
-          )}
-        </TouchableOpacity>
+          loading={mutation.isPending}
+        />
       </View>
     </ScrollView>
+    </ScreenBackground>
   );
 }
 
@@ -261,7 +259,7 @@ function PriceChart({ prices, labels }: { prices: number[]; labels: string[] }) 
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: 'transparent' },
   content: { padding: spacing.lg, gap: spacing.lg },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
   productRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },

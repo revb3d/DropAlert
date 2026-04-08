@@ -16,6 +16,7 @@ import { getTrackedProducts, untrackProduct, Product } from '../api/products';
 import ProductCard from '../components/ProductCard';
 import EmptyState from '../components/EmptyState';
 import { ProductCardSkeleton } from '../components/Skeleton';
+import ScreenBackground from '../components/ScreenBackground';
 import { colors, spacing, typography, radius } from '../theme';
 import { DashboardStackParamList } from '../navigation';
 
@@ -65,6 +66,7 @@ export default function DashboardScreen() {
   }, [data, sortBy]);
 
   return (
+    <ScreenBackground>
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
@@ -132,13 +134,14 @@ export default function DashboardScreen() {
         }
       />
     </View>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: 'transparent',
   },
   header: {
     paddingHorizontal: spacing.lg,

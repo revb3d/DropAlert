@@ -19,6 +19,7 @@ import { trackProduct } from '../api/products';
 import { toast } from '../store/toastStore';
 import EmptyState from '../components/EmptyState';
 import { AlertCardSkeleton } from '../components/Skeleton';
+import ScreenBackground from '../components/ScreenBackground';
 import { colors, spacing, radius, typography, shadow } from '../theme';
 import { formatPrice, formatDrop, timeAgo } from '../utils/format';
 
@@ -73,6 +74,7 @@ export default function AlertsScreen() {
   const unreadCount = data?.unreadCount ?? 0;
 
   return (
+    <ScreenBackground>
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
@@ -127,6 +129,7 @@ export default function AlertsScreen() {
         />
       )}
     </View>
+    </ScreenBackground>
   );
 }
 
@@ -198,7 +201,7 @@ function AlertCard({ alert, cardHeight, onPress, onTrack }: { alert: Alert; card
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: 'transparent' },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm,

@@ -100,8 +100,8 @@ function MainNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          backgroundColor: '#0F0F1E',
+          borderTopColor: '#2A2A3A',
           borderTopWidth: 1,
           height: 60,
           paddingBottom: 8,

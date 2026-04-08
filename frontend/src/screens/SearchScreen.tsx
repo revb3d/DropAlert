@@ -18,6 +18,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { searchAmazon, trackProduct, getTrackedProducts, Product } from '../api/products';
 import EmptyState from '../components/EmptyState';
 import { SearchCardSkeleton } from '../components/Skeleton';
+import ScreenBackground from '../components/ScreenBackground';
 import { colors, spacing, radius, typography, shadow } from '../theme';
 import { formatPrice, truncate } from '../utils/format';
 
@@ -85,6 +86,7 @@ export default function SearchScreen() {
   const results = allResults;
 
   return (
+    <ScreenBackground>
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
@@ -175,6 +177,7 @@ export default function SearchScreen() {
         }
       />
     </View>
+    </ScreenBackground>
   );
 }
 
@@ -229,7 +232,7 @@ function SearchResultCard({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: 'transparent' },
   header: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,

@@ -22,6 +22,8 @@ import {
   CategoryWatch,
 } from '../api/categories';
 import EmptyState from '../components/EmptyState';
+import ScreenBackground from '../components/ScreenBackground';
+import GradientButton from '../components/GradientButton';
 import { colors, spacing, radius, typography, shadow } from '../theme';
 
 type WatchMode = 'category' | 'keyword';
@@ -82,6 +84,7 @@ export default function WatchlistScreen() {
   const canSave = mode === 'keyword' ? keyword.trim().length >= 2 : !!selectedKey;
 
   return (
+    <ScreenBackground>
     <ScrollView
       style={styles.root}
       contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + spacing.xl }]}
@@ -199,16 +202,13 @@ export default function WatchlistScreen() {
             <TouchableOpacity style={styles.cancelBtn} onPress={resetForm}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
+            <GradientButton
+              label="Add Watchlist"
               onPress={() => createMutation.mutate()}
-              disabled={!canSave || createMutation.isPending}
-            >
-              {createMutation.isPending
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.saveBtnText}>Add Watchlist</Text>
-              }
-            </TouchableOpacity>
+              loading={createMutation.isPending}
+              disabled={!canSave}
+              style={styles.saveBtn}
+            />
           </View>
         </View>
       ) : (
@@ -218,6 +218,7 @@ export default function WatchlistScreen() {
         </TouchableOpacity>
       )}
     </ScrollView>
+    </ScreenBackground>
   );
 }
 
@@ -291,7 +292,7 @@ function WatchCard({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: spacing.lg },
   header: { paddingTop: spacing.md, paddingBottom: spacing.md },
   heading: { fontSize: typography.xl, fontWeight: typography.bold, color: colors.text },
