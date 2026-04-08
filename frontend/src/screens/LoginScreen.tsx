@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   inputIcon: { marginRight: spacing.sm },
-  input: { flex: 1, fontSize: typography.base, color: colors.text, paddingVertical: 12 },
+  input: { flex: 1, fontSize: typography.base, color: colors.text, paddingVertical: 12, outlineStyle: 'none' } as any,
   eyeBtn: { padding: 4 },
   btnGradient: { borderRadius: radius.md, marginTop: spacing.xs },
   btn: { paddingVertical: 14, alignItems: 'center' },
