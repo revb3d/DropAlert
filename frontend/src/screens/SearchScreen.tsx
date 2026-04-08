@@ -8,15 +8,16 @@ import {
   Image,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Keyboard,
   Linking,
 } from 'react-native';
+import { toast } from '../store/toastStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { searchAmazon, trackProduct, Product } from '../api/products';
+import { searchAmazon, trackProduct, getTrackedProducts, Product } from '../api/products';
 import EmptyState from '../components/EmptyState';
+import { SearchCardSkeleton } from '../components/Skeleton';
 import { colors, spacing, radius, typography, shadow } from '../theme';
 import { formatPrice, truncate } from '../utils/format';
 
@@ -36,6 +37,16 @@ export default function SearchScreen() {
     staleTime: 2 * 60_000,
   });
 
+  const { data: trackedProducts } = useQuery({
+    queryKey: ['products'],
+    queryFn: getTrackedProducts,
+  });
+
+  const trackedAsins = React.useMemo(
+    () => new Set((trackedProducts ?? []).map((p) => p.asin)),
+    [trackedProducts]
+  );
+
   useEffect(() => {
     if (!data) return;
     if (page === 1) {
@@ -54,11 +65,11 @@ export default function SearchScreen() {
     onSuccess: (_data, asin) => {
       setTracking((s) => { const n = new Set(s); n.delete(asin); return n; });
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      Alert.alert('Tracking started', 'The product has been added to your dashboard.');
+      toast('Added to your dashboard!', 'success');
     },
     onError: (err: Error, asin) => {
       setTracking((s) => { const n = new Set(s); n.delete(asin); return n; });
-      Alert.alert('Error', err.message);
+      toast(err.message, 'error');
     },
   });
 
@@ -117,6 +128,7 @@ export default function SearchScreen() {
           <SearchResultCard
             product={item}
             isTracking={tracking.has(item.asin)}
+            isTracked={trackedAsins.has(item.asin)}
             onTrack={() => trackMutation.mutate(item.asin)}
           />
         )}
@@ -135,6 +147,13 @@ export default function SearchScreen() {
                   </>
               }
             </TouchableOpacity>
+          ) : null
+        }
+        ListHeaderComponent={
+          isFetching && page === 1 ? (
+            <View>
+              {[1,2,3,4].map((i) => <SearchCardSkeleton key={i} />)}
+            </View>
           ) : null
         }
         ListEmptyComponent={
@@ -162,10 +181,12 @@ export default function SearchScreen() {
 function SearchResultCard({
   product,
   isTracking,
+  isTracked,
   onTrack,
 }: {
   product: Product;
   isTracking: boolean;
+  isTracked: boolean;
   onTrack: () => void;
 }) {
   const price = product.current_price ? parseFloat(product.current_price) : null;
@@ -191,12 +212,14 @@ function SearchResultCard({
       </View>
 
       <TouchableOpacity
-        style={[styles.trackBtn, isTracking && styles.trackBtnDisabled]}
-        onPress={onTrack}
-        disabled={isTracking}
+        style={[styles.trackBtn, (isTracking || isTracked) && styles.trackBtnDisabled]}
+        onPress={isTracked ? undefined : onTrack}
+        disabled={isTracking || isTracked}
       >
         {isTracking ? (
           <ActivityIndicator color={colors.primary} size="small" />
+        ) : isTracked ? (
+          <Ionicons name="checkmark-circle" size={26} color={colors.success} />
         ) : (
           <Ionicons name="add-circle-outline" size={26} color={colors.primary} />
         )}

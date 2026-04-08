@@ -9,6 +9,7 @@ const cron = require('node-cron');
 const { query, getClient } = require('../config/database');
 const { getItemsByASIN, searchProducts } = require('./amazonService');
 const { sendPriceDropAlert } = require('./notificationService');
+const { sendPriceDropEmail } = require('./emailService');
 const CategoryWatch = require('../models/CategoryWatch');
 const logger = require('../config/logger');
 
@@ -98,7 +99,9 @@ async function pollPrices() {
 
       const { rows: subscribers } = await query(
         `SELECT tp.threshold_percent, tp.target_price,
-                u.id AS user_id, u.expo_push_token, u.display_name
+                u.id AS user_id, u.expo_push_token, u.display_name,
+                u.email_notifications_enabled,
+                COALESCE(u.notification_email, u.email) AS alert_email
          FROM tracked_products tp
          INNER JOIN users u ON u.id = tp.user_id
          WHERE tp.product_id = $1
@@ -126,6 +129,16 @@ async function pollPrices() {
           productTitle: item.title,
           oldPrice, newPrice, dropPercent, asin: item.asin,
         });
+
+        if (sub.email_notifications_enabled && sub.alert_email) {
+          await sendPriceDropEmail({
+            to: sub.alert_email,
+            productTitle: item.title,
+            oldPrice, newPrice, dropPercent,
+            productUrl: item.product_url,
+            imageUrl: item.image_url,
+          });
+        }
 
         logger.info(`[poller] Alert fired: ${item.asin} dropped ${dropPercent.toFixed(1)}% for user ${sub.user_id}`);
       }
@@ -178,7 +191,9 @@ async function pollCategories() {
         // Find watchers whose threshold is met
         const { rows: watchers } = await query(
           `SELECT cw.threshold_percent,
-                  u.id AS user_id, u.expo_push_token
+                  u.id AS user_id, u.expo_push_token,
+                  u.email_notifications_enabled,
+                  COALESCE(u.notification_email, u.email) AS alert_email
            FROM category_watches cw
            INNER JOIN users u ON u.id = cw.user_id
            WHERE cw.category_key = $1
@@ -215,6 +230,16 @@ async function pollCategories() {
             productTitle: item.title,
             oldPrice, newPrice, dropPercent, asin: item.asin,
           });
+
+          if (watcher.email_notifications_enabled && watcher.alert_email) {
+            await sendPriceDropEmail({
+              to: watcher.alert_email,
+              productTitle: item.title,
+              oldPrice, newPrice, dropPercent,
+              productUrl: item.product_url,
+              imageUrl: item.image_url,
+            });
+          }
 
           logger.info(`[poller] Category alert: ${item.asin} dropped ${dropPercent.toFixed(1)}% for user ${watcher.user_id}`);
         }

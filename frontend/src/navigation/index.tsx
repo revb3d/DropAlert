@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import { getAlerts } from '../api/alerts';
 import { colors } from '../theme';
+import Toast from '../components/Toast';
 
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -158,12 +159,15 @@ export default function RootNavigator() {
   }
 
   return (
-    <RootStack.Navigator screenOptions={{ headerShown: false }}>
-      {isAuthenticated ? (
-        <RootStack.Screen name="Main" component={MainNavigator} />
-      ) : (
-        <RootStack.Screen name="Auth" component={AuthNavigator} />
-      )}
-    </RootStack.Navigator>
+    <View style={{ flex: 1 }}>
+      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          <RootStack.Screen name="Main" component={MainNavigator} />
+        ) : (
+          <RootStack.Screen name="Auth" component={AuthNavigator} />
+        )}
+      </RootStack.Navigator>
+      <Toast />
+    </View>
   );
 }

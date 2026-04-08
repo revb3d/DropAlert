@@ -6,6 +6,9 @@ export interface User {
   display_name: string | null;
   expo_push_token: string | null;
   created_at: string;
+  default_threshold_percent: number;
+  email_notifications_enabled: boolean;
+  notification_email: string | null;
 }
 
 export interface AuthResponse {

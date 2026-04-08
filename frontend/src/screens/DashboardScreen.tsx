@@ -15,7 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { getTrackedProducts, untrackProduct, Product } from '../api/products';
 import ProductCard from '../components/ProductCard';
 import EmptyState from '../components/EmptyState';
-import { colors, spacing, typography } from '../theme';
+import { ProductCardSkeleton } from '../components/Skeleton';
+import { colors, spacing, typography, radius } from '../theme';
 import { DashboardStackParamList } from '../navigation';
 
 type Nav = NativeStackNavigationProp<DashboardStackParamList>;
@@ -42,7 +43,26 @@ export default function DashboardScreen() {
     [untrackMutation]
   );
 
-  const products = data ?? [];
+  const [sortBy, setSortBy] = React.useState<'date' | 'price' | 'drop'>('date');
+
+  const products = React.useMemo(() => {
+    const list = data ?? [];
+    if (sortBy === 'price') {
+      return [...list].sort((a, b) => {
+        const pa = a.current_price ? parseFloat(a.current_price) : Infinity;
+        const pb = b.current_price ? parseFloat(b.current_price) : Infinity;
+        return pa - pb;
+      });
+    }
+    if (sortBy === 'drop') {
+      return [...list].sort((a, b) => {
+        const ta = parseFloat(a.threshold_percent ?? '0');
+        const tb = parseFloat(b.threshold_percent ?? '0');
+        return tb - ta;
+      });
+    }
+    return list;
+  }, [data, sortBy]);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -54,8 +74,29 @@ export default function DashboardScreen() {
         </Text>
       </View>
 
+      {/* Sort bar */}
+      <View style={styles.sortBar}>
+        {(['date', 'price', 'drop'] as const).map((s) => (
+          <TouchableOpacity
+            key={s}
+            style={[styles.sortBtn, sortBy === s && styles.sortBtnActive]}
+            onPress={() => setSortBy(s)}
+          >
+            <Text style={[styles.sortBtnText, sortBy === s && styles.sortBtnTextActive]}>
+              {s === 'date' ? 'Recent' : s === 'price' ? 'Price' : 'Threshold'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {isLoading ? (
+        <View style={styles.skeletons}>
+          {[1,2,3].map((i) => <ProductCardSkeleton key={i} />)}
+        </View>
+      ) : null}
+
       <FlatList
-        data={products}
+        data={isLoading ? [] : products}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[
           styles.list,
@@ -121,5 +162,33 @@ const styles = StyleSheet.create({
   },
   listEmpty: {
     flexGrow: 1,
+  },
+  sortBar: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  sortBtn: {
+    paddingVertical: 5,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sortBtnActive: {
+    backgroundColor: colors.primaryDim,
+    borderColor: colors.primary,
+  },
+  sortBtnText: {
+    fontSize: typography.xs,
+    color: colors.textMuted,
+    fontWeight: typography.medium,
+  },
+  sortBtnTextActive: {
+    color: colors.primary,
+  },
+  skeletons: {
+    paddingHorizontal: spacing.lg,
   },
 });

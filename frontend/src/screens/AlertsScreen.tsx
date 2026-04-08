@@ -15,7 +15,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { getAlerts, markAlertRead, markAllAlertsRead } from '../api/alerts';
 import type { Alert } from '../api/alerts';
+import { trackProduct } from '../api/products';
+import { toast } from '../store/toastStore';
 import EmptyState from '../components/EmptyState';
+import { AlertCardSkeleton } from '../components/Skeleton';
 import { colors, spacing, radius, typography, shadow } from '../theme';
 import { formatPrice, formatDrop, timeAgo } from '../utils/format';
 
@@ -54,7 +57,16 @@ export default function AlertsScreen() {
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
       queryClient.invalidateQueries({ queryKey: ['alerts', 'unread'] });
     },
-    onError: (err: Error) => window.alert(err.message),
+    onError: (err: Error) => toast(err.message, 'error'),
+  });
+
+  const trackMutation = useMutation({
+    mutationFn: (asin: string) => trackProduct(asin),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast('Added to your dashboard!', 'success');
+    },
+    onError: (err: Error) => toast(err.message, 'error'),
   });
 
   const alerts = data?.alerts ?? [];
@@ -82,38 +94,43 @@ export default function AlertsScreen() {
         )}
       </View>
 
-      <FlatList
-        data={alerts}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.list,
-          alerts.length === 0 && styles.listEmpty,
-        ]}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
-        }
-        renderItem={({ item }) => (
-          <AlertCard
-            alert={item}
-            cardHeight={cardHeight}
-            onPress={() => { if (!item.is_read) markReadMutation.mutate(item.id); }}
-          />
-        )}
-        ListEmptyComponent={
-          !isLoading ? (
+      {isLoading ? (
+        <View style={{ padding: 12, gap: 8 }}>
+          {[1,2,3,4,5].map((i) => <AlertCardSkeleton key={i} height={cardHeight} />)}
+        </View>
+      ) : (
+        <FlatList
+          data={alerts}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[
+            styles.list,
+            alerts.length === 0 && styles.listEmpty,
+          ]}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
+          }
+          renderItem={({ item }) => (
+            <AlertCard
+              alert={item}
+              cardHeight={cardHeight}
+              onPress={() => { if (!item.is_read) markReadMutation.mutate(item.id); }}
+              onTrack={item.product_asin ? () => trackMutation.mutate(item.product_asin!) : undefined}
+            />
+          )}
+          ListEmptyComponent={
             <EmptyState
               icon="notifications-off-outline"
               title="No alerts yet"
               subtitle="When a tracked product drops below your threshold, it will appear here."
             />
-          ) : null
-        }
-      />
+          }
+        />
+      )}
     </View>
   );
 }
 
-function AlertCard({ alert, cardHeight, onPress }: { alert: Alert; cardHeight: number; onPress: () => void }) {
+function AlertCard({ alert, cardHeight, onPress, onTrack }: { alert: Alert; cardHeight: number; onPress: () => void; onTrack?: () => void }) {
   const drop = parseFloat(alert.drop_percent);
   const oldPrice = parseFloat(alert.old_price);
   const newPrice = parseFloat(alert.new_price);
@@ -161,10 +178,19 @@ function AlertCard({ alert, cardHeight, onPress }: { alert: Alert; cardHeight: n
           </Text>
         </TouchableOpacity>
 
-        {/* Prices */}
+        {/* Prices + track button */}
         <View style={styles.priceRow}>
           <Text style={styles.newPrice}>{formatPrice(newPrice)}</Text>
           <Text style={styles.oldPrice}>{formatPrice(oldPrice)}</Text>
+          {onTrack && (
+            <TouchableOpacity
+              style={styles.trackBtn}
+              onPress={(e: any) => { e?.stopPropagation?.(); onTrack(); }}
+              hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+            >
+              <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -233,7 +259,8 @@ const styles = StyleSheet.create({
   },
   titleLink: { textDecorationLine: 'underline' },
 
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  trackBtn: { marginLeft: 'auto' as any },
   newPrice: { fontSize: 18, color: colors.text, fontWeight: typography.bold },
   oldPrice: { fontSize: 18, color: '#888', textDecorationLine: 'line-through' },
 });
