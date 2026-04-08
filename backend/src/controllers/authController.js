@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const UserModel = require('../models/User');
+const { OAuth2Client } = require('google-auth-library');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 function signToken(userId) {
   return jwt.sign({ sub: userId }, process.env.JWT_SECRET, {
@@ -52,4 +55,33 @@ async function me(req, res) {
   res.json({ user: req.user });
 }
 
-module.exports = { register, login, me };
+async function googleAuth(req, res, next) {
+  try {
+    const { credential } = req.body;
+    if (!credential) return res.status(422).json({ error: 'Missing Google credential' });
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name } = payload;
+
+    let user = await UserModel.findByGoogleId(googleId);
+    if (!user) {
+      user = await UserModel.findByEmail(email);
+      if (user) {
+        await UserModel.linkGoogleId(user.id, googleId);
+      } else {
+        user = await UserModel.createWithGoogle({ email, displayName: name, googleId });
+      }
+    }
+
+    const token = signToken(user.id);
+    res.json({ token, user });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, me, googleAuth };

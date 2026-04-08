@@ -37,7 +37,33 @@ async function updatePushToken(userId, token) {
 }
 
 async function verifyPassword(plaintext, hash) {
+  if (!hash) return false;
   return bcrypt.compare(plaintext, hash);
+}
+
+async function findByGoogleId(googleId) {
+  const { rows } = await query(
+    `SELECT id, email, display_name, expo_push_token, created_at,
+            default_threshold_percent, email_notifications_enabled, notification_email
+     FROM users WHERE google_id = $1 AND is_active = TRUE`,
+    [googleId]
+  );
+  return rows[0] || null;
+}
+
+async function createWithGoogle({ email, displayName, googleId }) {
+  const { rows } = await query(
+    `INSERT INTO users (email, display_name, google_id)
+     VALUES ($1, $2, $3)
+     RETURNING id, email, display_name, created_at,
+               default_threshold_percent, email_notifications_enabled, notification_email`,
+    [email.toLowerCase().trim(), displayName || null, googleId]
+  );
+  return rows[0];
+}
+
+async function linkGoogleId(userId, googleId) {
+  await query('UPDATE users SET google_id = $1 WHERE id = $2', [googleId, userId]);
 }
 
 async function changePassword(userId, newPassword) {
@@ -70,4 +96,4 @@ async function updateSettings(userId, { defaultThresholdPercent, emailNotificati
   await query(`UPDATE users SET ${fields.join(', ')} WHERE id = $${idx}`, values);
 }
 
-module.exports = { create, findByEmail, findById, updatePushToken, verifyPassword, changePassword, deleteAccount, updateSettings };
+module.exports = { create, findByEmail, findById, updatePushToken, verifyPassword, changePassword, deleteAccount, updateSettings, findByGoogleId, createWithGoogle, linkGoogleId };

@@ -11,7 +11,9 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation } from '@tanstack/react-query';
+import { GoogleLogin } from '@react-oauth/google';
 import { login } from '../api/auth';
+import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import { AuthStackParamList } from '../navigation';
 import { colors, spacing, radius, typography } from '../theme';
@@ -23,6 +25,18 @@ export default function LoginScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const signIn = useAuthStore((s) => s.signIn);
+
+  const googleMutation = useMutation({
+    mutationFn: async (credential: string) => {
+      const { data } = await apiClient.post('/auth/google', { credential });
+      return data;
+    },
+    onSuccess: async ({ token, user }) => {
+      setError('');
+      await signIn(token, user);
+    },
+    onError: (err: Error) => setError(err.message),
+  });
 
   const mutation = useMutation({
     mutationFn: () => login(email.trim(), password),
@@ -93,6 +107,27 @@ export default function LoginScreen({ navigation }: Props) {
               <Text style={styles.btnText}>Sign in</Text>
             )}
           </TouchableOpacity>
+        </View>
+
+        {/* Divider */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* Google Sign In */}
+        <View style={styles.googleWrap}>
+          <GoogleLogin
+            onSuccess={(res) => {
+              if (res.credential) googleMutation.mutate(res.credential);
+            }}
+            onError={() => setError('Google sign-in failed. Please try again.')}
+            theme="filled_black"
+            shape="rectangular"
+            width="360"
+            text="signin_with"
+          />
         </View>
 
         <TouchableOpacity onPress={() => navigation.navigate('Register')}>
@@ -176,5 +211,22 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    fontSize: typography.sm,
+    color: colors.textMuted,
+  },
+  googleWrap: {
+    alignItems: 'center',
   },
 });
