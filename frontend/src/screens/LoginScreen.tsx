@@ -31,7 +31,13 @@ export default function LoginScreen({ navigation }: Props) {
       await signIn(token, user);
     },
     onError: (err: Error) => {
-      setError(err.message);
+      if (err.message.includes('422') || err.message.includes('validation')) {
+        setError('Please enter a valid email and password.');
+      } else if (err.message.includes('401') || err.message.toLowerCase().includes('invalid')) {
+        setError('Invalid email or password.');
+      } else {
+        setError(err.message);
+      }
     },
   });
 
@@ -74,7 +80,11 @@ export default function LoginScreen({ navigation }: Props) {
 
           <TouchableOpacity
             style={[styles.btn, mutation.isPending && styles.btnDisabled]}
-            onPress={() => mutation.mutate()}
+            onPress={() => {
+              if (!email.trim() || !password) { setError('Please enter your email and password.'); return; }
+              setError('');
+              mutation.mutate();
+            }}
             disabled={mutation.isPending}
           >
             {mutation.isPending ? (
